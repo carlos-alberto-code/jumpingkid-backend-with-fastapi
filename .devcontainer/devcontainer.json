@@ -1,0 +1,45 @@
+{
+    "name": "Python 3.11 Development Environment with PostgreSQL",
+    "dockerComposeFile": "docker-compose.yml",
+    "service": "app",
+    "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+    "postCreateCommand": "poetry --version && python --version && pip install --upgrade pip",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-python.python",
+                "ms-python.black-formatter",
+                "ms-python.pylint",
+                "ms-python.isort",
+                "cweijan.vscode-database-client2",
+                "tamasfe.even-better-toml",
+                "ms-ossdata.vscode-postgresql"
+            ],
+            "settings": {
+                "python.defaultInterpreterPath": "/usr/local/bin/python3.11",
+                "python.linting.enabled": true,
+                "python.linting.pylintEnabled": true,
+                "python.formatting.provider": "black",
+                "editor.formatOnSave": true,
+                "python.poetryPath": "/usr/local/bin/poetry",
+                "python.terminal.activateEnvironment": true,
+                "python.venvPath": "~/.cache/pypoetry/virtualenvs"
+            }
+        }
+    },
+    "forwardPorts": [
+        8000,
+        5432
+    ],
+    "portsAttributes": {
+        "8000": {
+            "label": "FastAPI Server",
+            "onAutoForward": "notify"
+        },
+        "5432": {
+            "label": "PostgreSQL Database",
+            "onAutoForward": "silent"
+        }
+    },
+    "remoteUser": "vscode"
+}
