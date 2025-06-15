@@ -1,63 +1,70 @@
-"""
-Módulo principal de la API JumpingKid Backend.
-
-Este módulo contiene la aplicación FastAPI que proporciona endpoints
-para la aplicación JumpingKid, incluyendo endpoints de salud,
-información de la API y funcionalidades principales.
-"""
-
+# main.py
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+import uvicorn
 
-# Crear instancia de FastAPI
+# Importar routers
+from src.web.routers import auth
+
+# Crear aplicación FastAPI
 app = FastAPI(
-    title="JumpingKid Backend API",
-    description="API backend para la aplicación JumpingKid",
-    version="0.1.0"
+    title="JumpingKids API",
+    description="API para la aplicación de ejercicios JumpingKids",
+    version="1.0.0",
+    docs_url="/docs",  # Swagger UI
+    redoc_url="/redoc"  # ReDoc
 )
 
-# Endpoint de prueba básico
+# Configurar CORS para desarrollo
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",  # Next.js frontend
+        "http://127.0.0.1:3000",
+        "http://localhost:3001",  # Por si cambias el puerto
+    ],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
+)
+
+# Incluir routers con prefijo /api
+app.include_router(auth.router, prefix="/api")
+
+# Health check endpoint
+
+
+@app.get("/api/health")
+async def health_check():
+    """Endpoint para verificar que el servidor está funcionando."""
+    return JSONResponse(
+        status_code=200,
+        content={
+            "success": True,
+            "message": "JumpingKids API is running!",
+            "version": "1.0.0"
+        }
+    )
+
+# Root endpoint
 
 
 @app.get("/")
 async def root():
-    """
-    Endpoint raíz de la API.
-
-    Returns:
-        dict: Mensaje de bienvenida confirmando que el servidor está funcionando.
-    """
-    return {"message": "¡Hola! El servidor de JumpingKid está funcionando correctamente"}
-
-# Endpoint de health check
-
-
-@app.get("/health")
-async def health_check():
-    """
-    Endpoint de verificación de estado de la API.
-
-    Returns:
-        dict: Estado del servidor y mensaje de confirmación.
-    """
-    return {"status": "ok", "message": "Servidor funcionando"}
-
-# Endpoint de información de la API
-
-
-@app.get("/info")
-async def api_info():
-    """
-    Endpoint de información de la API.
-
-    Returns:
-        dict: Información básica de la API incluyendo nombre, versión y descripción.
-    """
+    """Endpoint raíz con información básica."""
     return {
-        "name": "JumpingKid Backend API",
-        "version": "0.1.0",
-        "description": "API backend para la aplicación JumpingKid"
+        "message": "JumpingKids API",
+        "docs": "/docs",
+        "health": "/api/health"
     }
 
+# Ejecutar servidor si se ejecuta directamente
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True,  # Recarga automática en desarrollo
+        log_level="info"
+    )
