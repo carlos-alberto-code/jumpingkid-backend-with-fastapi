@@ -18,6 +18,8 @@ from src.web.schemas.auth_schemas import (
     UserSigninRequest,
     UserResponse,
     AuthResponse,
+    SignInResponse,
+    AuthTokens,
     CheckEmailResponse,
 )
 
@@ -30,6 +32,34 @@ router = APIRouter(prefix="/auth", tags=["authentication"])
 
 # Base de datos mock temporal
 mock_users_db: dict[str, dict[str, Any]] = {}
+
+# Agregar usuarios de prueba
+test_user = {
+    "id": 1,
+    "username": "test@example.com",
+    "email": "test@example.com",
+    "name": "Usuario Test",
+    "user_type": "kid",
+    "subscription": "free",
+    "created_at": datetime.utcnow(),
+    "updated_at": None,
+    "password_hash": "hashed_password123",  # Mock hash for "password123"
+}
+mock_users_db["test@example.com"] = test_user
+
+# Agregar usuario carlos para testing
+carlos_user = {
+    "id": 2,
+    "username": "carlos",
+    "email": "carlos@jumpingkids.com",
+    "name": "Carlos Mendoza",
+    "user_type": "kid",
+    "subscription": "premium",
+    "created_at": datetime.utcnow(),
+    "updated_at": None,
+    "password_hash": "hashed_123456",  # Mock hash for "123456"
+}
+mock_users_db["carlos@jumpingkids.com"] = carlos_user
 
 
 def create_access_token(user_data: dict) -> str:
@@ -52,7 +82,7 @@ def create_access_token(user_data: dict) -> str:
 async def signup(request: UserSignupRequest):
     """
     Registrar nuevo usuario.
-    
+
     Crea una nueva cuenta de usuario con los datos proporcionados.
     """
     # Verificar si el email ya existe
@@ -72,9 +102,13 @@ async def signup(request: UserSignupRequest):
     user_id = len(mock_users_db) + 1
     user_data = {
         "id": user_id,
+        "username": request.email,  # Use email as username for signup
         "email": request.email,
+        "name": f"{request.first_name} {request.last_name}",
         "first_name": request.first_name,
         "last_name": request.last_name,
+        "user_type": "kid",  # Default user type
+        "subscription": "free",  # Default subscription
         "created_at": datetime.utcnow(),
         "updated_at": None,
         "password_hash": f"hashed_{request.password}",  # Mock hash
@@ -86,22 +120,36 @@ async def signup(request: UserSignupRequest):
     # Crear token
     access_token = create_access_token(user_data)
 
-    # Crear respuesta
+    # Crear tokens en formato esperado
+    tokens = AuthTokens(
+        accessToken=access_token,
+        refreshToken="mock_refresh_token",  # Temporal
+        expiresIn=3600,  # 1 hora en segundos
+        tokenType="Bearer"
+    )
+
+    # Crear respuesta de usuario
     user_response = UserResponse(
-        id=user_data["id"],
+        id=str(user_data["id"]),  # Como string
+        name=user_data["name"],
         email=user_data["email"],
-        first_name=user_data["first_name"],
-        last_name=user_data["last_name"],
-        created_at=user_data["created_at"],
-        updated_at=user_data["updated_at"]
+        userType=user_data["user_type"],
+        subscription=user_data["subscription"],
+        createdAt=user_data["created_at"],
+        updatedAt=user_data["updated_at"]
+    )
+
+    # Crear respuesta final
+    signin_response = SignInResponse(
+        user=user_response,
+        tokens=tokens,
+        lastLogin=datetime.utcnow().isoformat()
     )
 
     return AuthResponse(
         success=True,
         message="Usuario registrado exitosamente",
-        data=user_response,
-        access_token=access_token,
-        token_type="bearer"
+        data=signin_response
     )
 
 
@@ -115,21 +163,24 @@ async def signup(request: UserSignupRequest):
 async def signin(request: UserSigninRequest):
     """
     Iniciar sesión.
-    
-    Autentica al usuario con email y contraseña.
-    """
-    # Buscar usuario en "base de datos" mock
-    user_data = mock_users_db.get(request.email)
 
+    Autentica al usuario con username y contraseña.
+    """
+    # Buscar usuario por username en "base de datos" mock
+    user_data = None
+    print(f"Buscando usuario: {request.username}")
+    for _, user in mock_users_db.items():
+        if user.get("username") == request.username:  # Buscar por username
+            user_data = user
+            break
+    print(f"Usuario encontrado: {user_data}")
     if not user_data:
         return JSONResponse(
             status_code=status.HTTP_401_UNAUTHORIZED,
             content={
                 "success": False,
                 "message": "Credenciales inválidas",
-                "data": None,
-                "access_token": None,
-                "token_type": None
+                "data": None
             },
         )
 
@@ -140,31 +191,43 @@ async def signin(request: UserSigninRequest):
             content={
                 "success": False,
                 "message": "Credenciales inválidas",
-                "data": None,
-                "access_token": None,
-                "token_type": None
+                "data": None
             },
         )
 
     # Crear token
     access_token = create_access_token(user_data)
 
-    # Crear respuesta
+    # Crear tokens en formato esperado
+    tokens = AuthTokens(
+        accessToken=access_token,
+        refreshToken="mock_refresh_token",  # Temporal
+        expiresIn=3600,  # 1 hora en segundos
+        tokenType="Bearer"
+    )
+
+    # Crear respuesta de usuario
     user_response = UserResponse(
-        id=user_data["id"],
+        id=str(user_data["id"]),  # Como string
+        name=user_data.get("name"),
         email=user_data["email"],
-        first_name=user_data["first_name"],
-        last_name=user_data["last_name"],
-        created_at=user_data["created_at"],
-        updated_at=user_data["updated_at"]
+        userType=user_data.get("user_type"),
+        subscription=user_data.get("subscription"),
+        createdAt=user_data["created_at"],
+        updatedAt=user_data.get("updated_at")
+    )
+
+    # Crear respuesta final
+    signin_response = SignInResponse(
+        user=user_response,
+        tokens=tokens,
+        lastLogin=datetime.utcnow().isoformat()
     )
 
     return AuthResponse(
         success=True,
         message="Inicio de sesión exitoso",
-        data=user_response,
-        access_token=access_token,
-        token_type="bearer"
+        data=signin_response
     )
 
 
@@ -178,7 +241,7 @@ async def signin(request: UserSigninRequest):
 async def signout():
     """
     Cerrar sesión.
-    
+
     En una implementación real, aquí invalidaríamos el token.
     """
     return {
@@ -198,7 +261,7 @@ async def signout():
 async def check_email(email: str):
     """
     Verificar disponibilidad de email.
-    
+
     Verifica si un email específico ya está registrado en el sistema.
     """
     exists = email in mock_users_db
@@ -212,7 +275,7 @@ async def check_email(email: str):
 
 @router.get(
     "/me",
-    response_model=AuthResponse,
+    response_model=dict,
     status_code=status.HTTP_200_OK,
     summary="Obtener usuario actual",
     description="Endpoint para obtener información del usuario autenticado",
@@ -220,23 +283,22 @@ async def check_email(email: str):
 async def get_current_user():
     """
     Obtener información del usuario actual.
-    
+
     Este endpoint requiere autenticación (mock por ahora).
     """
     # Mock user data
     mock_user = UserResponse(
-        id=1,
+        id="1",
+        name="Usuario Mock",
         email="mock@ejemplo.com",
-        first_name="Usuario",
-        last_name="Mock",
-        created_at=datetime.utcnow(),
-        updated_at=None
+        userType="kid",
+        subscription="free",
+        createdAt=datetime.utcnow(),
+        updatedAt=None
     )
 
-    return AuthResponse(
-        success=True,
-        message="Usuario obtenido exitosamente",
-        data=mock_user,
-        access_token=None,
-        token_type=None
-    )
+    return {
+        "success": True,
+        "message": "Usuario obtenido exitosamente",
+        "data": mock_user
+    }

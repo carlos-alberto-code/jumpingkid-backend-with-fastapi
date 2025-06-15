@@ -32,40 +32,61 @@ class UserSignupRequest(BaseModel):
 class UserSigninRequest(BaseModel):
     """Esquema para la solicitud de inicio de sesión."""
 
-    email: EmailStr
+    username: str  # Cambiar de email a username
     password: str
+    remember_me: bool | None = False
 
     class Config:
         json_schema_extra = {
             "example": {
-                "email": "usuario@ejemplo.com",
-                "password": "contraseña123"
+                "username": "usuario@ejemplo.com",
+                "password": "contraseña123",
+                "remember_me": False
             }
         }
+
+
+class AuthTokens(BaseModel):
+    """Esquema para los tokens de autenticación."""
+
+    accessToken: str      # camelCase como espera frontend
+    refreshToken: str
+    expiresIn: int        # en segundos
+    tokenType: str = "Bearer"
 
 
 class UserResponse(BaseModel):
     """Esquema para la respuesta de datos del usuario."""
 
-    id: int
+    id: str               # Como string, no int
+    name: Optional[str] = None
     email: str
-    first_name: str
-    last_name: str
-    created_at: datetime
-    updated_at: Optional[datetime] = None
+    userType: Optional[str] = None
+    subscription: Optional[str] = None
+    createdAt: Optional[datetime] = None
+    updatedAt: Optional[datetime] = None
 
     class Config:
         from_attributes = True
         json_schema_extra = {
             "example": {
-                "id": 1,
+                "id": "1",
+                "name": "Juan Pérez",
                 "email": "usuario@ejemplo.com",
-                "first_name": "Juan",
-                "last_name": "Pérez",
-                "created_at": "2023-01-01T12:00:00Z",
-                "updated_at": "2023-01-02T12:00:00Z"
+                "userType": "kid",
+                "subscription": "free",
+                "createdAt": "2023-01-01T12:00:00Z",
+                "updatedAt": "2023-01-02T12:00:00Z"
             }
         }
+
+
+class SignInResponse(BaseModel):
+    """Esquema para la respuesta de inicio de sesión."""
+
+    user: UserResponse
+    tokens: AuthTokens
+    lastLogin: Optional[str] = None
 
 
 class AuthResponse(BaseModel):
@@ -73,24 +94,29 @@ class AuthResponse(BaseModel):
 
     success: bool
     message: str
-    data: Optional[UserResponse] = None
-    access_token: Optional[str] = None
-    token_type: Optional[str] = "bearer"
+    data: Optional[SignInResponse] = None
 
     class Config:
         json_schema_extra = {
             "example": {
                 "success": True,
-                "message": "Usuario autenticado exitosamente",
+                "message": "Inicio de sesión exitoso",
                 "data": {
-                    "id": 1,
-                    "email": "usuario@ejemplo.com",
-                    "first_name": "Juan",
-                    "last_name": "Pérez",
-                    "created_at": "2023-01-01T12:00:00Z"
-                },
-                "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
-                "token_type": "bearer"
+                    "user": {
+                        "id": "1",
+                        "name": "Juan Pérez",
+                        "email": "usuario@ejemplo.com",
+                        "userType": "kid",
+                        "subscription": "free"
+                    },
+                    "tokens": {
+                        "accessToken": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+                        "refreshToken": "refresh_token_here",
+                        "expiresIn": 3600,
+                        "tokenType": "Bearer"
+                    },
+                    "lastLogin": "2023-01-01T12:00:00Z"
+                }
             }
         }
 
