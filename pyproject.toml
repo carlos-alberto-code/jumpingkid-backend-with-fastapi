@@ -2,24 +2,29 @@
 name = "jumpingkid-backend-with-fastapi"
 version = "0.1.0"
 description = ""
-authors = ["Carlos Alberto Baltazar Hinojosa <97766052+carlos-alberto-code@users.noreply.github.com>"]
+authors = [
+    "Carlos Alberto Baltazar Hinojosa <97766052+carlos-alberto-code@users.noreply.github.com>",
+]
 readme = "README.md"
 package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.11"
 fastapi = "^0.115.12"
-uvicorn = {extras = ["standard"], version = "^0.34.3"}
+uvicorn = { extras = ["standard"], version = "^0.34.3" }
 alembic = "^1.16.1"
 pyjwt = "^2.10.1"
-pydantic = {extras = ["email"], version = "^2.11.7"}
+pydantic = { extras = ["email"], version = "^2.11.7" }
+sqlalchemy = "^2.0.0"
+sqlmodel = "^0.0.24"
+psycopg2-binary = "^2.9.10"
 
 
-[tool.poetry.group.dev.dependencies]
-black = "^25.1.0"
-isort = "^6.0.1"
-flake8 = "^7.2.0"
-mypy = "^1.16.0"
+# [tool.poetry.group.dev.dependencies]
+# black = "^25.1.0"
+# isort = "^6.0.1"
+# flake8 = "^7.2.0"
+# mypy = "^1.16.0"
 
 [build-system]
 requires = ["poetry-core"]

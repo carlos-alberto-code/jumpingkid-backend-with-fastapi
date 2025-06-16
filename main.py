@@ -1,4 +1,7 @@
-# main.py
+"""main.py
+Archivo principal para iniciar la aplicación FastAPI de JumpingKids.
+Este archivo configura la aplicación, incluye los routers y define los endpoints básicos."""
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -6,6 +9,9 @@ import uvicorn
 
 # Importar routers
 from src.web.routers import auth
+
+# Importar configuración de base de datos
+from src.database import init_db_with_test_data
 
 # Crear aplicación FastAPI
 app = FastAPI(
@@ -15,6 +21,14 @@ app = FastAPI(
     docs_url="/docs",  # Swagger UI
     redoc_url="/redoc"  # ReDoc
 )
+
+# Inicializar base de datos
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Inicializar la base de datos al iniciar la aplicación."""
+    init_db_with_test_data()
 
 # Configurar CORS para desarrollo
 app.add_middleware(

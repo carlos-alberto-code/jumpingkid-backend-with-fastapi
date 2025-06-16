@@ -7,10 +7,16 @@ y manejo de tokens JWT para la aplicación FastAPI de JumpingKid.
 
 from datetime import datetime, timedelta
 from typing import Any
+import re
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, status, Query, Depends
 from fastapi.responses import JSONResponse
+from sqlmodel import Session
 import jwt
+
+# Importar database y modelos
+from src.database import get_db
+from src.services.user_service import username_exists
 
 # Importar schemas
 from src.web.schemas.auth_schemas import (
@@ -26,6 +32,14 @@ from src.web.schemas.auth_schemas import (
 # Configuración temporal (después moveremos a config)
 SECRET_KEY = "temp-secret-key-for-development"
 ALGORITHM = "HS256"
+
+# Palabras reservadas para usernames
+RESERVED_USERNAMES = {
+    "admin", "root", "user", "test", "api", "www", "ftp", "mail",
+    "email", "help", "support", "info", "contact", "about", "news",
+    "blog", "forum", "chat", "dev", "demo", "null", "undefined",
+    "system", "config", "settings", "jumpingkids", "tutor", "kid"
+}
 
 # Crear router
 router = APIRouter(prefix="/auth", tags=["authentication"])
@@ -271,6 +285,41 @@ async def check_email(email: str):
         exists=exists,
         message=f"Email {'ya registrado' if exists else 'disponible'}"
     )
+
+
+@router.get(
+    "/check-username",
+    status_code=status.HTTP_200_OK,
+    summary="Verificar disponibilidad de username en tiempo real",
+    description="Endpoint para verificar si un username está disponible",
+)
+async def check_username_availability(
+    username: str = Query(..., min_length=4, max_length=15),
+    db: Session = Depends(get_db)
+):
+    """
+    Verificar disponibilidad de username en tiempo real
+    """
+    try:
+        # Normalizar username
+        username = username.lower().strip()
+
+        # Validar formato (solo alfanuméricos, guiones y guiones bajos)
+        if not re.match(r'^[a-zA-Z0-9_-]+$', username):
+            return {"available": False}
+
+        # Verificar palabras reservadas
+        if username in RESERVED_USERNAMES:
+            return {"available": False}
+
+        # Verificar si ya existe en la base de datos
+        user_exists = username_exists(db, username)
+
+        return {"available": not user_exists}
+
+    except (ValueError, TypeError):
+        # En caso de error, reportar como no disponible por seguridad
+        return {"available": False}
 
 
 @router.get(
