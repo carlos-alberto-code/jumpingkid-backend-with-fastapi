@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 import uvicorn
 
 # Importar routers
-from src.web.routers import auth
+from src.web.routers import auth, kids, exercises, routines, assignments, training, utils
 
 # Importar configuración de base de datos
 from src.database import init_db_with_test_data
@@ -43,6 +43,12 @@ app.add_middleware(
 
 # Incluir routers con prefijo /api
 app.include_router(auth.router, prefix="/api")
+app.include_router(kids.router, prefix="/api")
+app.include_router(exercises.router, prefix="/api")
+app.include_router(routines.router, prefix="/api")
+app.include_router(assignments.router, prefix="/api")
+app.include_router(training.router, prefix="/api")
+app.include_router(utils.router, prefix="/api")
 
 # Health check endpoint
 

@@ -7,9 +7,12 @@ incluyendo tipos de usuario y tipos de suscripción.
 
 from datetime import datetime
 from enum import Enum
-from typing import Optional
+from typing import Optional, List, TYPE_CHECKING
 
-from sqlmodel import SQLModel, Field
+from sqlmodel import SQLModel, Field, Relationship
+
+if TYPE_CHECKING:
+    from .kid import Kid
 
 
 class UserType(str, Enum):
@@ -44,6 +47,9 @@ class User(UserBase, table=True):
     password_hash: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
+
+    # Relationships
+    kids: List["Kid"] = Relationship(back_populates="user")
 
 
 class UserCreate(UserBase):
